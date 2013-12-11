@@ -175,7 +175,7 @@ public class Queries {
 			tx.rollback();
 			
 			if(silent)
-				log.error("failed hibernate operation: "+e.getMessage(),e);
+				log.error("failed hibernate operation",e);
 			else
 				throw new SimplernateException();
 		}finally{

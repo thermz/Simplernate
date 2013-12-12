@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 *.pydevproject
 .metadata
 .gradle
@@ -14,6 +13,8 @@ local.properties
 .loadpath
 target/**
 build/**
+.project
+.classpath
 
 # External tool builders
 .externalToolBuilders/
@@ -36,4 +37,3 @@ build/**
 *.jar
 *.war
 *.ear
->>>>>>> 782e459db9cb7addd92c6a25177c466330f52de1

@@ -158,8 +158,7 @@ public class Queries {
 			else
 				throw new SimplernateException(e);
 		}finally{
-			
-					session.close();
+			session.close();
 		}
 		return retVal;
 	}

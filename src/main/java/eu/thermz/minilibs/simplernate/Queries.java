@@ -17,6 +17,7 @@ import org.hibernate.criterion.Order;
 
 import eu.thermz.minilibs.simplernate.exceptions.SimplernateException;
 
+@SuppressWarnings("unchecked")
 public class Queries {
 
 	static Logger log = Logger.getLogger(Queries.class);
@@ -45,103 +46,59 @@ public class Queries {
 		sessionFactory = buildSessionFactory(cfgFile);
 	}
 	
-	public static <T,C extends Criterion> List<T> select(Class<T> clazz, Order order, Integer offset, Integer limit, C ... criterions){
-		return select( asList(criterions), clazz, order, offset, limit);
+	public static <T, C extends Criterion> List<T> select(final Class<T> clazz,final C ... conditions){
+		return hibernateOp(new HOperationL<T>() {
+			public List<T> ret(Session session, Transaction tx) throws Exception {
+				Criteria criteria = session.createCriteria(clazz);
+				if(conditions!=null)
+					for (Criterion condition : conditions)
+						criteria.add(condition);
+				return (List<T>) criteria.list();
+			}
+		}, true);
 	}
 	
-	public static <T, C extends Criterion> List<T> select(Class<T> clazz, C ... criterions){
-		return select( asList(criterions), clazz);
+	public static <T, C extends Criterion> T selectSingle(final Class<T> clazz, final C ... conditions){
+		return hibernateOp(new HOperation<T>() {
+			public T ret(Session session, Transaction tx) throws Exception {
+				Criteria criteria = session.createCriteria(clazz);
+				if(conditions!=null)
+					for (Criterion condition : conditions)
+						criteria.add(condition);
+				criteria.setMaxResults(1);
+				return (T) criteria.uniqueResult();
+			}
+		}, true);
 	}
 	
-	public static <T> List<T> select(List<? extends Criterion> conditions, Class<T> clazz, Order order, Integer offset, Integer limit){
-		List<T> resultSet = new ArrayList<T>();
-		Session session = getSessionFactory().openSession();
-		session.beginTransaction();
-		Criteria criteria = session.createCriteria(clazz);
-		try {
-			if(order!=null)criteria.addOrder(order);
-			if(offset!=null)criteria.setFirstResult(offset);
-			if(limit!=null)criteria.setMaxResults(limit);
-			
-			if(conditions!=null)
-				for (Criterion condition : conditions)
-					criteria.add(condition);
-			
-			resultSet = criteria.list();
-		} finally {
-			if (session.isOpen())
-				session.close();
-		}
-		return resultSet;
+	public static <T> T saveOrUpdate(final T object){
+		return hibernateOp(new HOperation<T>() {
+			public T ret(Session session, Transaction tx) throws Exception {
+				session.saveOrUpdate(object);
+				session.getTransaction().commit();
+				return object;
+			}
+		}, true);
 	}
 	
-	public static <T> List<T> select(List<? extends Criterion> conditions, Class<T> clazz){
-		return select(conditions, clazz, null, null, null);
+	public static <T> T delete(final T object){
+		return hibernateOp(new HOperation<T>() {
+			public T ret(Session session, Transaction tx) throws Exception {
+				session.delete(object);
+				session.getTransaction().commit();
+				return object;
+			}
+		}, true);
 	}
 	
-	public static <T> T selectSingle(List<Criterion> conditions, Class<T> clazz, Integer limit){
-		T result = null;
-		Session session = getSessionFactory().openSession();
-		session.beginTransaction();
-		Criteria criteria = session.createCriteria(clazz);
-		try {
-			if(limit!=null)criteria.setMaxResults(limit);
-			if(conditions!=null)
-				for (Criterion condition : conditions)
-					criteria.add(condition);
-			result = (T) criteria.uniqueResult();
-		} finally {
-			if (session.isOpen())
-				session.close();
-		}
-		return result;
-	}
-	
-	public static <T> T saveOrUpdate(T object){
-		Session sess = getSessionFactory().openSession();
-		sess.beginTransaction();
-		try {
-			sess.saveOrUpdate(object);
-			sess.getTransaction().commit();
-		} finally {
-			if (sess.isOpen())
-				sess.close();
-		}
-		return object;
-	}
-	
-	public static <T> T delete(T object){
-		Session sess = getSessionFactory().openSession();
-		sess.beginTransaction();
-		try {
-			sess.delete(object);
-			sess.getTransaction().commit();
-		} finally {
-			if (sess.isOpen())
-				sess.close();
-		}
-		return object;
-	}
-	
-	public static <T> T deleteSingle(List<? extends Criterion> conditions, Class<T> clazz, Integer limit){
-		T result = null;
-		Session session = getSessionFactory().openSession();
-		session.beginTransaction();
-		Criteria criteria = session.createCriteria(clazz);
-		try {
-			if(limit!=null)criteria.setMaxResults(limit);
-			
-			if(conditions!=null)
-				for (Criterion condition : conditions)
-					criteria.add(condition);
-			
-			result = (T) criteria.uniqueResult();
-			session.delete(result);
-		} finally {
-			if (session.isOpen())
-				session.close();
-		}
-		return result;
+	public static <T> T deleteSingle(List<? extends Criterion> conditions, final Class<T> clazz, Integer limit){
+		return hibernateOp(new HOperation<T>() {
+			public T ret(Session session, Transaction tx) throws Exception {
+				T result = (T) session.createCriteria(clazz).uniqueResult();
+				session.delete(result);
+				return result;
+			}
+		}, true);
 	}
 	
 	public static <T> List<T> hibernateOp(HOperationL<T> hopList, boolean silent){
@@ -172,7 +129,6 @@ public class Queries {
 			retVal = hop.ret(session, tx);
 		}catch(Exception e){
 			tx.rollback();
-			
 			if(silent)
 				log.error("failed hibernate operation",e);
 			else

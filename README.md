@@ -12,11 +12,8 @@ Simplernate is Simple and minimal Hibernate wrapper, that allow you to use a min
 
 It will provide 2 kind of syntax:
 
-1 - A very simple DSL with import static that could to be useful in very simple query.
-2 - A more complete DSL with builder for some more advanced feature (limit, offset, groupby, many to many relatioships, etc.)
-
-1 is in development
-2 is not yet implemented
++ 1 - A very simple DSL with import static that could to be useful in very simple query. (in development)
++ 2 - A more complete DSL with builder for some more advanced feature (limit, offset, groupby, many to many relatioships, etc.) (not yet implemented)
 
 Small samples for 1:
 

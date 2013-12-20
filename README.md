@@ -3,10 +3,10 @@ Simplernate
 
 Version 0.2 SNAPSHOT - {Hibernate 3.x supported for now}
 
-If you're in the need of using something like simplernate, then you must have made bad choices :-)
+If you're in the need of using something like simplernate, then you must have made bad choices.
 If you like to use a simple and fluent interface to query your RDBMS, then go for something like #jOOQ.
 
-Hibernate is a powerful tool, maybe too much powerful, I would even say that is a dangerous power. If you are forced to use it but you just need a simple way of querying the database and mapping your object without writing any boileplate, dealing with sessions, transactions, proxy objects, etc.. then you could find a project like this one useful.
+Hibernate is a powerful tool, maybe too much powerful, I would even say that is a dangerous power. If you are forced to use it (a legacy to maintain and evolve, or a project where you can't choose the tools) but you just need a simple way of querying the database and mapping your object without writing any boileplate, dealing with sessions, transactions, proxy objects, etc.. then you could find a project like this one useful.
 
 Simplernate wants to be a simple and minimal Hibernate wrapper, that allow the developer to use a fluent interface to query the database.
 

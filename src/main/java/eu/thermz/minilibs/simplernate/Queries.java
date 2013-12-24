@@ -3,7 +3,10 @@ package eu.thermz.minilibs.simplernate;
 import static java.util.Arrays.asList;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
@@ -13,7 +16,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.criterion.Criterion;
-import org.hibernate.criterion.Order;
 
 import eu.thermz.minilibs.simplernate.exceptions.SimplernateException;
 
@@ -34,6 +36,7 @@ public class Queries {
 			sessionFactory = cfg.buildSessionFactory();
 		} catch (Throwable ex) {
 			log.error("Initial SessionFactory creation failed.",ex);
+			ex.printStackTrace();
 		}
 		return sessionFactory;
 	}
@@ -88,17 +91,17 @@ public class Queries {
 				session.getTransaction().commit();
 				return object;
 			}
-		}, true);
+		}, false);
 	}
 	
-	public static <T> T deleteSingle(List<? extends Criterion> conditions, final Class<T> clazz, Integer limit){
+	public static <T> T deleteSingle(List<? extends Criterion> conditions, final Class<T> clazz){
 		return hibernateOp(new HOperation<T>() {
 			public T ret(Session session, Transaction tx) throws Exception {
-				T result = (T) session.createCriteria(clazz).uniqueResult();
+				T result = (T) session.createCriteria(clazz).setMaxResults(1).uniqueResult();
 				session.delete(result);
 				return result;
 			}
-		}, true);
+		}, false);
 	}
 	
 	public static <T> List<T> hibernateOp(HOperationL<T> hopList, boolean silent){
@@ -110,6 +113,7 @@ public class Queries {
 			retVal = hopList.ret(session, tx);
 		}catch(Exception e){
 			tx.rollback();
+			e.printStackTrace();
 			if(silent)
 				log.error("failed hibernate operation: "+e.getMessage(),e);
 			else
@@ -129,6 +133,7 @@ public class Queries {
 			retVal = hop.ret(session, tx);
 		}catch(Exception e){
 			tx.rollback();
+			e.printStackTrace();
 			if(silent)
 				log.error("failed hibernate operation",e);
 			else
@@ -139,28 +144,32 @@ public class Queries {
 		return retVal;
 	}
 	
-	public static <T> List<T> nativeSQL(final Class<T> clazz, final String query, final Object ... par){
-		return hibernateOp(new HOperationL<T>() {
-			public List<T> ret(Session session, Transaction tx) throws Exception {
-				return new NativeSQLOperation<T>(){{
-					_par = par;
-					_query = query;
-					_clazz = clazz;
-				}}.ret(session, tx);
-			}
-		}, true);
+	/**
+	 * Typesafe hql query to select from hql.
+	 * 
+	 * @param clazz the return type
+	 * @param query the hql query for select
+	 * @param par 
+	 * @return
+	 */
+	public static <T> List<T> hql(final Class<T> clazz, final String query, final KV ... par) throws SimplernateException{
+		return hibernateOp( 
+				new HQLOperation<T>(){{
+						_par = par;
+						_query = query;
+						_clazz = clazz;
+				}},
+				false);
 	}
 	
-	public static <T> List<T> nativeSQL$(final Class<T> clazz, final String query, final Object ... par){
-		return hibernateOp(new HOperationL<T>() {
-			public List<T> ret(Session session, Transaction tx) throws Exception {
-				return new NativeSQLOperation<T>(){{
-					_par = par;
-					_query = query;
-					_clazz = clazz;
-				}}.ret(session, tx);
-			}
-		}, false);
+	public static <T> List<T> sql(final Class<T> clazz, final String query, final Object ... par) throws SimplernateException{
+		return hibernateOp( 
+				new NativeSQLOperation<T>(){{
+						_par = par;
+						_query = query;
+						_clazz = clazz;
+				}},
+				false);
 	}
 	
 	protected static class NativeSQLOperation<T> implements HOperationL<T> {
@@ -175,6 +184,42 @@ public class Queries {
 				q.setParameter(i, params.get(i));
 			List<T> result = q.list();
 			return result;
+		}
+	}
+	
+	protected static class HQLOperation<T> implements HOperationL<T> {
+		public KV[] _par;
+		public String _query;
+		public Class<T> _clazz;
+		
+		public List<T> ret(Session session, Transaction tx) throws Exception {
+			Query q = session.createQuery("from "+_clazz.getSimpleName()+" "+_query);
+			for (KV kv : _par)
+				q.setParameter(kv.k, kv.v);
+			
+			List<T> result = q.list();
+			return result;
+		}
+	}
+	
+	public static Map<String, ?> params(KV ... params){
+		Map<String, Object> paramsMap = new HashMap<String, Object>();
+		for (KV kv : params)
+			paramsMap.put(kv.k, kv.v);
+		return paramsMap;
+	}
+	
+	public static KV kv(String k, Object v){
+		return new KV(k, v);
+	}
+	
+	public static class KV{
+		public final String k;
+		public final Object v;
+		
+		public KV(String k, Object v) {
+			this.k = k;
+			this.v = v;
 		}
 	}
 	

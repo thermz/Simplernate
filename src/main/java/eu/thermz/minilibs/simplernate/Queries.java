@@ -6,7 +6,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.log4j.Logger;
 import org.hibernate.Criteria;
@@ -35,8 +34,7 @@ public class Queries {
 			cfg.configure(cfgFile);
 			sessionFactory = cfg.buildSessionFactory();
 		} catch (Throwable ex) {
-			log.error("Initial SessionFactory creation failed.",ex);
-			ex.printStackTrace();
+			throw new SimplernateException(ex);
 		}
 		return sessionFactory;
 	}
@@ -49,7 +47,7 @@ public class Queries {
 		sessionFactory = buildSessionFactory(cfgFile);
 	}
 	
-	public static <T, C extends Criterion> List<T> select(final Class<T> clazz,final C ... conditions){
+	public static <T, C extends Criterion> List<T> selectAllFrom(final Class<T> clazz,final C ... conditions){
 		return hibernateOp(new HOperationL<T>() {
 			public List<T> ret(Session session, Transaction tx) throws Exception {
 				Criteria criteria = session.createCriteria(clazz);
@@ -61,7 +59,7 @@ public class Queries {
 		}, true);
 	}
 	
-	public static <T, C extends Criterion> T selectSingle(final Class<T> clazz, final C ... conditions){
+	public static <T, C extends Criterion> T selectFrom(final Class<T> clazz, final C ... conditions){
 		return hibernateOp(new HOperation<T>() {
 			public T ret(Session session, Transaction tx) throws Exception {
 				Criteria criteria = session.createCriteria(clazz);
@@ -81,7 +79,7 @@ public class Queries {
 				session.getTransaction().commit();
 				return object;
 			}
-		}, true);
+		}, false);
 	}
 	
 	public static <T> T delete(final T object){

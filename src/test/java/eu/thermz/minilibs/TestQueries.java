@@ -17,7 +17,7 @@ import static eu.thermz.minilibs.simplernate.QueriesBuilder.QueryBFactory.*;
 
 
 /**
- * Test for syntax mini and for syntax simple
+ * Test for syntax static and for syntax builder
  * <br/>
  * <br/>
  * 
